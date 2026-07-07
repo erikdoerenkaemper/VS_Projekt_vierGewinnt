@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Lobby</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="login-box">
+    <h2 style="align-self: center" id="username">Benutzer</h2>
+    <input class="button-play" id="search" value="PLAY" type="button">
+    <table>
+        <tr>
+            <th>
+                <b>Win</b>
+            </th>
+            <th>
+                <b>Draw</b>
+            </th>
+            <th>
+                <b>Lost</b>
+            </th>
+        </tr>
+        <tr>
+            <td id="wins">-</td>
+            <td id="draws">-</td>
+            <td id="losses">-</td>
+        </tr>
+    </table>
+    <input class="button-back" id="logout" value="LOGOUT" type="button">
+</div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script src="script.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+        await loadProfile();
+        connectWebSocketLobby();
+
+        document.getElementById("search").addEventListener("click", search);
+        document.getElementById("logout").addEventListener("click", logout);
+    });
+
+</script>
+</html>

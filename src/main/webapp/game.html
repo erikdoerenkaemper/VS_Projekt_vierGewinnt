@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Viergewinnt</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="grid-wrapper">
+    <div class="player">
+        <h2 id="player1">player 1</h2>
+        <div id="player-1"></div>
+    </div>
+    <div class="game-container">
+        <div class="grid" id="matrix"></div>
+        <div class="column-buttons" id="columnButtons"></div>
+    </div>
+    <div class="player">
+        <h2 id="player2">player 2</h2>
+        <div id="player-2"></div>
+    </div>
+</div>
+<div class="button-container">
+    <input class="button-back" id="aufgeben" value="aufgeben" type="button">
+</div>
+<div id="gameMessage" class="game-message hidden"></div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script src="script.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+        await loadProfileGame();
+        connectWebSocketGame();
+        document.getElementById("aufgeben").addEventListener("click", aufgeben);
+    });
+    const buttonContainer = document.getElementById("columnButtons");
+
+    for (let col = 0; col < 7; col++) {
+
+        const button = document.createElement("button");
+        button.id = "col-" + col;
+        button.textContent = "put"
+        button.addEventListener("click", () => {
+            sendCol(col);
+        });
+        buttonContainer.appendChild(button);
+
+    }
+
+    const matrixContainer = document.getElementById('matrix');
+    // 6x7 Grid erzeugen
+    for (let i = 0; i < 42; i++) {
+        const cell = document.createElement('div');
+
+        cell.classList.add("cell");
+        cell.id = `cell-${i}`;
+
+        matrixContainer.appendChild(cell);
+    }
+</script>
+</html>

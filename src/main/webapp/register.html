@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrieren</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="login-box">
+    <h2>Account erstellen</h2>
+    <input
+            class="login-input"
+            id="username"
+            name="username"
+            type="text"
+            placeholder="Benutzername">
+    <input
+            class="login-input"
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Passwort">
+    <input
+            class="login-input"
+            id="passwordRepeat"
+            name="passwordRepeat"
+            type="password"
+            placeholder="Passwort wiederholen">
+    <div class="button-group">
+        <input
+                class="button-back"
+                id="back"
+                value="Zurück"
+                type="button">
+        <input
+                class="button"
+                id="register"
+                value="Registrieren"
+                type="button">
+
+    </div>
+</div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsencrypt/bin/jsencrypt.min.js"></script>
+<script src="script.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+        await getSession();
+        document.getElementById("register").addEventListener("click", register);
+        document.getElementById("back").addEventListener("click", () => {window.location.href = "index.html";});
+    });
+</script>
+</html>
