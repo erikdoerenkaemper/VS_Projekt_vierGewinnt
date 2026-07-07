@@ -1,4 +1,5 @@
 let websocket;
+const wsUri = "ws://131.173.110.10:8080/VS_Projekt_vierGewinnt/game";
 //game
 const gameID = sessionStorage.getItem("gameId");
 const username = sessionStorage.getItem("username")
@@ -6,6 +7,18 @@ const sessionId = sessionStorage.getItem("ssID");
 let pwdHash = sessionStorage.getItem("pwdHash");
 let user1;
 let user2;
+function sendData(dataBlock){
+    const gameDAT=JSON.stringify(dataBlock);
+    const combined=sessionId+gameDAT+pwdHash;
+    const combinedhash= CryptoJS.SHA256(combined).toString();
+    const transferData={
+        sessionid: sessionId,
+        data: gameDAT,
+        hash: combinedhash
+    }
+    console.log(transferData);
+    websocket.send(JSON.stringify(transferData));
+}
 async function loadProfileGame() {
     const lobbyData = {
         lobby: "get"
@@ -38,40 +51,20 @@ async function pingGame(){
             type: "PING",
             gameID: gameID
         }
-        const gameDAT=JSON.stringify(gameData);
-        const combined=sessionId+gameDAT+pwdHash;
-        const combinedhash= CryptoJS.SHA256(combined).toString();
-        const transferData={
-            sessionid: sessionId,
-            data: gameDAT,
-            hash: combinedhash
-        }
-        console.log(transferData);
-        websocket.send(JSON.stringify(transferData));
+        sendData(gameData);
         console.log("Ping gesendet");
     }
 }
 function connectWebSocketGame() {
-    websocket = new WebSocket(
-        "ws://131.173.110.10:8080/VS_Projekt_vierGewinnt/game"
-    );
+    websocket = new WebSocket(wsUri);
     const gameData={
         type: "GAME_CONNECT",
         username: username,
         gameID: gameID
     }
-    const gameDAT=JSON.stringify(gameData);
-    const combined=sessionId+gameDAT+pwdHash;
-    const combinedhash= CryptoJS.SHA256(combined).toString();
-    const transferData={
-        sessionid: sessionId,
-        data: gameDAT,
-        hash: combinedhash
-    }
-    console.log(transferData);
     websocket.onopen = () => {
         console.log("WebSocket verbunden");
-        websocket.send(JSON.stringify(transferData));
+        sendData(gameData);
         setTimeout(() => {
             pingGame();
             setInterval(pingGame, 2000);
@@ -209,17 +202,9 @@ function sendCol(index) {
         column: index,
         gameID: gameID
     }
-    const gameDAT=JSON.stringify(gameData);
-    const combined=sessionId+gameDAT+pwdHash;
-    const combinedhash= CryptoJS.SHA256(combined).toString();
-    const transferData={
-        sessionid: sessionId,
-        data: gameDAT,
-        hash: combinedhash
-    }
-    console.log(transferData);
-    websocket.send(JSON.stringify(transferData));
-}function aufgeben() {
+    sendData(gameData)
+}
+function aufgeben() {
     if (websocket.readyState !== WebSocket.OPEN) {
         alert("Keine Verbindung zum Server");
         return;
@@ -228,16 +213,7 @@ function sendCol(index) {
         type: "GIVE_UP",
         gameID: gameID
     }
-    const gameDAT=JSON.stringify(gameData);
-    const combined=sessionId+gameDAT+pwdHash;
-    const combinedhash= CryptoJS.SHA256(combined).toString();
-    const transferData={
-        sessionid: sessionId,
-        data: gameDAT,
-        hash: combinedhash
-    }
-    console.log(transferData);
-    websocket.send(JSON.stringify(transferData));
+    sendData(gameData)
 
 }
 
@@ -288,37 +264,20 @@ async function pingLobby(){
             type: "PING",
             gameID: -1
         }
-        const gameDAT=JSON.stringify(gameData);
-        const combined=sessionId+gameDAT+pwdHash;
-        const combinedhash= CryptoJS.SHA256(combined).toString();
-        const transferData={
-            sessionid: sessionId,
-            data: gameDAT,
-            hash: combinedhash
-        }
-        console.log(transferData);
-        websocket.send(JSON.stringify(transferData));
+        sendData(gameData);
         console.log("Ping gesendet");
     }
 }
 function connectWebSocketLobby(){
-    const wsUri = "ws://131.173.110.10:8080/VS_Projekt_vierGewinnt/game";
     websocket = new WebSocket(wsUri);
     const lobbyData={
         type: "LOBBY_CONNECT",
         username: pusername
     };
-    const lobDAT=JSON.stringify(lobbyData);
-    const combined=sessionId+lobDAT+pwdHash;
-    const combinedhash= CryptoJS.SHA256(combined).toString();
-    const transferData={
-        sessionid: sessionId,
-        data: lobDAT,
-        hash: combinedhash
-    }
-    console.log(transferData);
-    websocket.onopen = () => {console.log("WebSocket verbunden");
-        websocket.send(JSON.stringify(transferData));
+
+    websocket.onopen = () => {
+        console.log("WebSocket verbunden");
+        sendData(lobbyData);
         setTimeout(() => {
             pingLobby();
             setInterval(pingLobby, 2000);
@@ -346,17 +305,7 @@ function search(){
     const lobbyData={
         type: "SEARCH_GAME",
     };
-    const lobDAT=JSON.stringify(lobbyData);
-    const combined=sessionId+lobDAT+pwdHash;
-    const combinedhash= CryptoJS.SHA256(combined).toString();
-    const transferData={
-        sessionid: sessionId,
-        data: lobDAT,
-        hash: combinedhash
-    }
-    console.log(transferData);
-    // Nachricht an Server senden
-    websocket.send(JSON.stringify(transferData));
+    sendData(lobbyData);
     sessionStorage.setItem("searchBlock","true")
     document.getElementById("search").value = "Suche läuft...";
     document.getElementById("search").disabled = true;
