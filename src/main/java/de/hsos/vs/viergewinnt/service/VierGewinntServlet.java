@@ -231,7 +231,6 @@ public class VierGewinntServlet extends HttpServlet {
                 String username = serverData.getUsernameFromSession(sessionID);
                 System.out.println("Abgemeldet: " + username);
                 serverData.logoutUser(username);
-                //serverData.removeSession(sessionID);
 
                 response.getWriter().write("Abmeldung erfolgreich");
                 response.setStatus(HttpServletResponse.SC_OK);

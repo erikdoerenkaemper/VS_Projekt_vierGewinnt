@@ -46,6 +46,8 @@ public final class ServerData {
     private int gameIDCounter;
 
     private final ScheduledExecutorService pingChecker = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService botChecker = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> botCheckers;
 
     private PrivateKey privateKey;
     private PublicKey publicKey;
@@ -74,6 +76,7 @@ public final class ServerData {
 
     public void shutdown() {
         pingChecker.shutdown();
+        botChecker.shutdown();
     }
 
 
@@ -143,9 +146,7 @@ public final class ServerData {
 
     public void logoutUser(String username) {
         // Aktives Game beenden
-        System.out.println("146");
         int gameID = usernameToGameID.get(username);
-        System.out.println("148");
         if (gameID != -1) {
             System.out.println("Laufendes Spiel automatisch beenden...");
             String[] usernames = getUsernamesOfGame(gameID);
@@ -176,6 +177,7 @@ public final class ServerData {
         httpSessionToAccount.remove(sessionID);
         loggedInAccounts.remove(username);
         queue.remove(username);
+        lastPings.remove(username);
 
 
 
@@ -245,10 +247,14 @@ public final class ServerData {
         if (queue.isEmpty()) {
             queue.add(username);
             //System.out.println("Zur WARTESCHLANGE hinzugefügt: " + username);
-            startBot();
+            startBotChecker(username);
             return null;
         }
         else {
+            if (botCheckers != null) {
+                botCheckers.cancel(false);
+                botCheckers = null;
+            }
             String user2 =  queue.poll();
             int gameID = newGame(username, user2);
             //System.out.println("Neues GAME mit: " + username + " und " + user2);
@@ -409,6 +415,24 @@ public final class ServerData {
     }
 
 
+    private void startBotChecker(String username){
+        Runnable botCheckerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                checkForBot(username);
+            }
+        };
+        System.out.println("Bot checker starten...");
+        botCheckers = botChecker.schedule(botCheckerRunnable, 10, TimeUnit.SECONDS);
+        System.out.println("Bot checker gestartet...");
+    }
+
+    private void checkForBot(String username){
+        if(queue.contains(username)){
+            startBot();
+        }
+    }
+
 
     // Botgegner
 
@@ -439,7 +463,7 @@ public final class ServerData {
         ProcessBuilder pb = new ProcessBuilder(
                 "java",
                 "-jar",
-                "VierGewinntNativerClientBot.jar",
+                "VierGewinntNativerClientBot-1.0-jar-with-dependencies.jar",
                 "localhost:8080/VS_Projekt_vierGewinnt/",
                 botName
         );
