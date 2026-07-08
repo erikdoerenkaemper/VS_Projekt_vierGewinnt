@@ -15,6 +15,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
@@ -172,16 +174,29 @@ public final class ServerData {
         }
 
         // Zuordnungen löschen
-        String sessionID = accountToHttpSession.get(username);
-        accountToHttpSession.remove(username);
-        httpSessionToAccount.remove(sessionID);
-        loggedInAccounts.remove(username);
-        queue.remove(username);
-        lastPings.remove(username);
-
-
-
+        try {
+            String sessionID = accountToHttpSession.get(username);
+            accountToHttpSession.remove(username);
+            httpSessionToAccount.remove(sessionID);
+            loggedInAccounts.remove(username);
+            queue.remove(username);
+            lastPings.remove(username);
+        } catch (NullPointerException e) {
+            System.out.println("Logout Null");
+            System.out.println(e.getMessage());
+        }
     }
+
+
+
+    public String getIPAddress(){
+        try {
+            return Inet4Address.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public void ping(String username, int gameID){
         long lastPing = System.currentTimeMillis();
@@ -468,7 +483,6 @@ public final class ServerData {
                 botName
         );
         try {
-            pb.inheritIO();
             pb.start();
             System.out.println(botName + " gestartet");
         } catch (IOException e) {
@@ -503,17 +517,18 @@ public final class ServerData {
             Map<?, ?> map;
             try {
                 map = objectMapper.readValue(data, Map.class);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                username = map.get("username").toString();
+            } catch (Exception e) {
+                return false;
             }
-
-            username = map.get("username").toString();
+            System.out.println(data);
             if (username == null || accounts.get(username) == null) {
                 System.out.println("Es wurde kein Username gefunden");
                 return false;
+            } else  {
+                username = map.get("username").toString();
             }
         }
-
 
         // Hash generieren
         String passwordHash = accounts.get(username).getPasswordHash();

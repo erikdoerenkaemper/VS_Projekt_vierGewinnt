@@ -10,10 +10,12 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.Session;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Quelle
+ */
 @ServerEndpoint("/game")
 public class VierGewinntWebSocket {
 
@@ -29,13 +31,20 @@ public class VierGewinntWebSocket {
     }
 
     @OnMessage
-    public void onMessage(Session session, String message) throws IOException {
+    public void onMessage(Session session, String message) {
         //System.out.println("onMessage...");
         // Message auswerten
-        Map<?, ?> data = objectMapper.readValue(message, Map.class);
-        Map<?, ?> validatedData = objectMapper.readValue(serverData.getData(data), Map.class);
-        //System.out.println("Validated Data: " + validatedData);
-        String type = validatedData.get("type").toString();
+        Map<?, ?> validatedData;
+        String type;
+        try {
+            Map<?, ?> data = objectMapper.readValue(message, Map.class);
+            validatedData = objectMapper.readValue(serverData.getData(data), Map.class);
+            type = validatedData.get("type").toString();
+        } catch (Exception e) {
+            System.out.println("Websocket Daten nicht korrekt formatiert!");
+            return;
+        }
+
         if(!(type.equals("PING") || type.equals("GAME_TURN"))) {
             System.out.println("\nMESSAGE: " + message);
         }
@@ -146,22 +155,51 @@ public class VierGewinntWebSocket {
             String user2 = result.username();
             String sessionID2 = serverData.getWebSocketSessionID(user2);
 
-            Session session1 = serverData.getWebSocketSession(sessionID);
-            Session session2 = serverData.getWebSocketSession(sessionID2);
+
 
             // Antwort verfassen
             Map<String, String> map = new HashMap<>();
             map.put("type", "GAME_FOUND");
             map.put("gameID", Integer.toString(gameID));
+            String messageJson;
             try {
-                String messageJson = objectMapper.writeValueAsString(map);
-                session1.getBasicRemote().sendText(messageJson);
-                session2.getBasicRemote().sendText(messageJson);
-            } catch (JsonProcessingException e) {
-                System.out.println("JsonProcessingException!");
-            } catch (IOException e) {
-                System.out.println("IOException!");
+                messageJson = objectMapper.writeValueAsString(map);
+            } catch (Exception e){
+                return;
             }
+
+
+
+            Session session1 = serverData.getWebSocketSession(sessionID);
+            Session session2 = serverData.getWebSocketSession(sessionID2);
+
+
+
+
+
+
+
+            if (session1 == null) {
+                giveUpGame(sessionID, gameID);
+                System.out.println(username + " nicht mehr erreichbar. Spiel abgebrochen");
+                return;
+            } else if (session2 == null) {
+                giveUpGame(sessionID2, gameID);
+                System.out.println(user2 + " nicht mehr erreichbar. Spiel abgebrochen");
+                return;
+            }
+
+            RemoteEndpoint.Basic session1Remote =  session1.getBasicRemote();
+            RemoteEndpoint.Basic session2Remote =  session2.getBasicRemote();
+
+            try {
+                session1Remote.sendText(messageJson);
+                session2Remote.sendText(messageJson);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+
 
         } else { // Zur Warteschalange hinzugefügt
             System.out.println("Wartet: " + sessionID);
@@ -222,8 +260,18 @@ public class VierGewinntWebSocket {
         Session session1 = serverData.getWebSocketSession(sessionID1);
         Session session2 = serverData.getWebSocketSession(sessionID2);
 
-        session1.getBasicRemote().sendText(messageJson);
-        session2.getBasicRemote().sendText(messageJson);
+        if(session1 == null && session2 == null){
+            return;
+        } else if (session1 == null) {
+            System.out.println("Websocket Verbindung zu " + user1 + " nicht bestehend!");
+            session2.getBasicRemote().sendText(messageJson);
+        } else if (session2 == null) {
+            System.out.println("Websocket Verbindung zu " + user2 + " nicht bestehend!");
+            session1.getBasicRemote().sendText(messageJson);
+        } else {
+            session1.getBasicRemote().sendText(messageJson);
+            session2.getBasicRemote().sendText(messageJson);
+        }
     }
 
     private void ping(String sessionID, int gameID){
@@ -257,14 +305,6 @@ public class VierGewinntWebSocket {
      */
     @OnError
     public void onError(Session session, Throwable throwable) {
-        System.out.println("Websocket Error: \n");
-        StackTraceElement[] error = throwable.getStackTrace();
-        int i = Math.min(error.length, 5);
-
-        System.out.println("Websocket Error: ");
-        throwable.printStackTrace();
-//        for (int j = 0; j<i; j++){
-//            System.out.println(error[j]);
-//        }
+        System.out.println("Websocket Error: " + throwable.getMessage());
     }
 }

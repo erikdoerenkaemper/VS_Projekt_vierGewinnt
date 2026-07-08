@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -84,8 +86,9 @@ public class VierGewinntServlet extends HttpServlet {
             // SessionID senden
             Map<String, String> sessionData = new HashMap<>();
             sessionData.put("SESSIONID", sessionID);
+            String ipAddress = serverData.getIPAddress();
+            sessionData.put("ADDRESS", ipAddress);
             String sessionIDJson = objectMapper.writeValueAsString(sessionData);
-            System.out.println(sessionIDJson);
             response.getWriter().write(sessionIDJson);
             response.setStatus(HttpServletResponse.SC_OK);
 
@@ -95,8 +98,6 @@ public class VierGewinntServlet extends HttpServlet {
         } else if (pathInfo != null && pathInfo.equals("/publickey")) {
             System.out.println("PUBLICKEY...");
             String publicKey = serverData.getPublicKey();
-
-            System.out.println(publicKey);
             response.getWriter().write(publicKey);
             response.setStatus(HttpServletResponse.SC_OK);
 
@@ -128,11 +129,9 @@ public class VierGewinntServlet extends HttpServlet {
 
             // Daten holen
             String encryptedData  = request.getReader().lines().collect(Collectors.joining());
-            System.out.println("Verschlüsselte Nachricht: " + encryptedData);
 
             // Nachricht entschlüsseln
             String decryptedData = serverData.decryptMessage(encryptedData);
-            System.out.println("Entschlüsselte Nachricht: " + decryptedData);
 
 
             Map<?, ?> decryptedDataMap = objectMapper.readValue(decryptedData, Map.class);
@@ -248,28 +247,7 @@ public class VierGewinntServlet extends HttpServlet {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
 
 
 
