@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap');
+
 
 body {
     font-family: 'Roboto Slab', serif;
@@ -11,27 +11,20 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-
     width: 300px;
     margin: 100px auto;
-
     padding: 30px;
-
     background-color: white;
     border-radius: 12px;
-
     box-shadow: 0 4px 15px rgba(0,0,0,0.15);
 }
 
 .login-input {
     width: 250px;
     height: 45px;
-
     padding: 10px;
-
     border: 1px solid #ccc;
     border-radius: 8px;
-
     font-size: 16px;
     box-sizing: border-box;
 }
@@ -53,19 +46,13 @@ body {
 .button {
     width: 120px;
     height: 45px;
-
     border: none;
     border-radius: 8px;
-
     background-color: #49f;
-
     color: white;
-
     font-size: 16px;
     font-weight: bold;
-
     cursor: pointer;
-
     transition: background-color 0.3s, transform 0.1s;
 }
 
@@ -87,22 +74,15 @@ body {
 .button-play{
         width: 120px;
         height: 45px;
-
         border: none;
         border-radius: 8px;
-
         background-color: green;
-
         color: white;
         align-self: center;
         font-size: 16px;
         font-weight: bold;
-
         cursor: pointer;
-
-        transition:
-                background-color 0.3s,
-                transform 0.1s;
+        transition: background-color 0.3s, transform 0.1s;
 }
 .button-play:hover {
     background-color: darkgreen;
@@ -113,22 +93,15 @@ body {
 .button-back {
     width: 120px;
     height: 45px;
-
     border: none;
     border-radius: 8px;
-
     background-color: #678;
-
     color: white;
     align-self: center;
     font-size: 16px;
     font-weight: bold;
-
     cursor: pointer;
-
-    transition:
-            background-color 0.3s,
-            transform 0.1s;
+    transition: background-color 0.3s, transform 0.1s;
 }
 
 .button-back:hover {
@@ -157,18 +130,12 @@ th, td {
 
 
 .grid {
-
     display: grid;
-
     grid-template-columns: repeat(7, 60px);
     grid-template-rows: repeat(6, 60px);
-
     border: 4px solid #1144af;
-
     background-color: #5566ee;
-
     border-radius: 10px;
-
     overflow: hidden;
 }
 
@@ -176,12 +143,9 @@ th, td {
 .cell {
     width: 60px;
     height: 60px;
-
     background-color: white;
-
     border: 1px solid #ccc;
     border-radius: 50%;
-
     box-sizing: border-box;
 }
 .player {
@@ -193,23 +157,17 @@ th, td {
 #player-1 {
     width: 60px;
     height: 60px;
-
     background-color: white;
-
     border: 1px solid #ccc;
     border-radius: 50%;
-
     box-sizing: border-box;
 }
 #player-2 {
     width: 60px;
     height: 60px;
-
     background-color: white;
-
     border: 1px solid #ccc;
     border-radius: 50%;
-
     box-sizing: border-box;
 }
 .game-container {
@@ -227,16 +185,12 @@ th, td {
 .column-buttons button {
     width: 60px;
     height: 40px;
-
     border: none;
     border-radius: 8px;
-
     background-color: #00f;
     color: white;
-
     font-size: 20px;
     font-weight: bold;
-
     cursor: pointer;
 }
 
