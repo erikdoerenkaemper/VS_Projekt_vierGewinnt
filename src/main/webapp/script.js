@@ -1,5 +1,5 @@
 let websocket;
-const wsUri = "ws://131.173.110.10:8080/VS_Projekt_vierGewinnt/game";
+let wsUri = sessionStorage.getItem("wsUriGlob")
 //game
 const gameID = sessionStorage.getItem("gameId");
 const username = sessionStorage.getItem("username")
@@ -352,6 +352,8 @@ async function getSession() {
         console.log(session);
         seseinId = session.SESSIONID;
         console.log(seseinId);
+        const wsUriTemp="ws://"+session.ADDRESS+":8080/VS_Projekt_vierGewinnt/game"
+        sessionStorage.setItem("wsUriGlob", wsUriTemp);
     } catch (error) {
         console.error(error);
     }
