@@ -1,12 +1,16 @@
 let websocket;
 let wsUri = sessionStorage.getItem("wsUriGlob")
-//game
 const gameID = sessionStorage.getItem("gameId");
 const username = sessionStorage.getItem("username")
 const sessionId = sessionStorage.getItem("ssID");
 let pwdHash = sessionStorage.getItem("pwdHash");
 let user1;
 let user2;
+//game
+/**
+ * Senden der Daten per Websocket
+ * @param dataBlock = Daten die gesendet werden
+ */
 function sendData(dataBlock){
     const gameDAT=JSON.stringify(dataBlock);
     const combined=sessionId+gameDAT+pwdHash;
@@ -19,6 +23,10 @@ function sendData(dataBlock){
     console.log(transferData);
     websocket.send(JSON.stringify(transferData));
 }
+
+/**
+ * Testen ob eine Session für game vorhanden ist sonst zum start zurück
+ */
 async function loadProfileGame() {
     const lobbyData = {
         lobby: "get"
@@ -44,6 +52,10 @@ async function loadProfileGame() {
         console.error(error);
     }
 }
+
+/**
+ * Ping für das Game
+ */
 async function pingGame(){
     console.log("ping", websocket.readyState)
     if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -55,6 +67,10 @@ async function pingGame(){
         console.log("Ping gesendet");
     }
 }
+
+/**
+ * Verbinden des Websockets für game + spielablauf
+ */
 function connectWebSocketGame() {
     websocket = new WebSocket(wsUri);
     const gameData={
@@ -70,10 +86,11 @@ function connectWebSocketGame() {
             setInterval(pingGame, 2000);
         }, 100);
     };
-
+    //Verarbeiten der antworten des Servers
     websocket.onmessage = (event) => {
         const message = JSON.parse(event.data);
         console.log(message);
+        //Aufbau des Spielfeldes
         if (message.type[0] === "USERNAMES") {
             let activePlayer = message.active_player[0]
             user1 = message.usernames[0];
@@ -87,6 +104,7 @@ function connectWebSocketGame() {
                 document.getElementById("player-2").style.backgroundColor = "gold"
             }
             updateGrid(message.matrix);
+            //anzeigen der PUT-Buttons(blau=man ist am Zug/grau=gegner ist am Zug)
             if (activePlayer === username) {
                 for (let i = 0; i < 7; i++) {
                     const col = document.getElementById(`col-${i}`);
@@ -98,6 +116,7 @@ function connectWebSocketGame() {
                     col.style.backgroundColor = "#aaa"
                 }
             }
+            //Anpassen der Münze unter Spielernamen
         } else if (message.type[0] === "GAME_TURN") {
             let activePlayer = message.active_player[0]
             updateGrid(message.matrix);
@@ -108,6 +127,7 @@ function connectWebSocketGame() {
                 document.getElementById("player-1").style.backgroundColor = "white";
                 document.getElementById("player-2").style.backgroundColor = "gold";
             }
+            //Auswerten des Spiels
             if (message.game_state[0] === "DRAW") {
                 showMessage("Unentschieden",null);
                 setTimeout(() => {
@@ -127,6 +147,7 @@ function connectWebSocketGame() {
                     window.location.href = "lobby.html";
                 }, 3000);
             }
+            //Button farbe
             if (activePlayer === username) {
                 for (let i = 0; i < 7; i++) {
                     const col = document.getElementById(`col-${i}`);
@@ -138,6 +159,7 @@ function connectWebSocketGame() {
                     col.style.backgroundColor = "#aaa"
                 }
             }
+            //Aufgeben auswerten
         } else if (message.type[0] === "GIVE_UP") {
             if (message.game_state[0] === "USER1WON") {
                 showMessage(user2 + " hat aufgegeben. " + user1 + " hat gewonnen!",user1)
@@ -156,6 +178,12 @@ function connectWebSocketGame() {
     };
     websocket.onclose=()=>{};
 }
+
+/**
+ * Ausgabe des Entergebnisses
+ * @param text = Nachricht
+ * @param winner = Für farbe des Randes
+ */
 function showMessage(text,winner) {
     const box = document.getElementById("gameMessage");
     disableInput();
@@ -169,6 +197,11 @@ function showMessage(text,winner) {
         box.style.borderColor = "black";
     }
 }
+
+/**
+ * Spielfeld aktualisieren
+ * @param matrix = Spielfeld
+ */
 function updateGrid(matrix) {
     for (let i = 0; i < matrix.length; i++) {
 
@@ -186,12 +219,20 @@ function updateGrid(matrix) {
     }
 
 }
+/**
+* Buttons deaktivieren
+*/
 function disableInput(){
     for (let i=0;i<7;i++){
         const button=document.getElementById(`col-${i}`);
         button.disabled=true;
     }
 }
+
+/**
+ * Senden einer Spalte
+ * @param index = Spalte
+ */
 function sendCol(index) {
     if (websocket.readyState !== WebSocket.OPEN) {
         alert("Keine Verbindung zum Server");
@@ -219,6 +260,10 @@ function aufgeben() {
 
 //lobby
 let pusername;
+
+/**
+ * Aufbau der Lobby Seite
+ */
 async function loadProfile() {
     const lobbyData = {
         lobby: "get"
@@ -257,6 +302,10 @@ async function loadProfile() {
         console.error(error);
     }
 }
+
+/**
+ * ping für Lobby
+ */
 async function pingLobby(){
     console.log("ping", websocket.readyState)
     if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -268,6 +317,10 @@ async function pingLobby(){
         console.log("Ping gesendet");
     }
 }
+
+/**
+ * Websocket für Lobby
+ */
 function connectWebSocketLobby(){
     websocket = new WebSocket(wsUri);
     const lobbyData={
@@ -283,6 +336,7 @@ function connectWebSocketLobby(){
             setInterval(pingLobby, 2000);
         }, 100);
     };
+    //weiterleiten an game wenn ein Spiel gefunden wurde
     websocket.onmessage = (event) => {
         console.log("Server:", event.data);
         const message = JSON.parse(event.data);
@@ -297,6 +351,10 @@ function connectWebSocketLobby(){
 
     };
 }
+
+/**
+ * Suche nach einem Spiel anfragen
+ */
 function search(){
     if(websocket.readyState !== WebSocket.OPEN){
         alert("Keine Verbindung zum Server");
@@ -310,6 +368,10 @@ function search(){
     document.getElementById("search").value = "Suche läuft...";
     document.getElementById("search").disabled = true;
 }
+
+/**
+ * ausloggen des Benutzers + zurücksenden zuum Start
+ */
 async function logout(){
     const logoutData={
         logout: "abmelden"
@@ -344,6 +406,10 @@ async function logout(){
 }
 //index
 let seseinId;
+
+/**
+ * erhalten  der SessionID und der IP-Adresse des Servers für websocket aufbau
+ */
 async function getSession() {
     try {
         const response = await fetch("api/sessionid");
@@ -358,6 +424,10 @@ async function getSession() {
         console.error(error);
     }
 }
+
+/**
+ * anmelden mit einem Account
+ */
 async function login() {
     const username = document.getElementById("name").value;
     const password = document.getElementById("passwort").value;
@@ -406,6 +476,9 @@ async function login() {
 }
 
 //register
+/**
+ * Benutzer registrieren
+ */
 async function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
