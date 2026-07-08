@@ -7,6 +7,7 @@ let pwdHash = sessionStorage.getItem("pwdHash");
 let user1;
 let user2;
 //game
+// Websocket Erklärung: https://javascript.info/websocket
 /**
  * Senden der Daten per Websocket
  * @param dataBlock = Daten die gesendet werden
