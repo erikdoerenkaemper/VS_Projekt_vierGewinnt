@@ -12,8 +12,6 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;

@@ -11,14 +11,13 @@ public class ViergewinntModel {
     private final PlayerType[][] feld;
     private  PlayerType spielerAktuell;
     private  GameState gameState;
-    private final int gameID;
     private final String user1;
     private final String user2;
     //  ==============  INITIALIZATION  ==============  //
     /**
      *  Initialisiert ein neues Spiel
      */ // Create
-    public ViergewinntModel(int gameID,  String user1, String user2) {
+    public ViergewinntModel(String user1, String user2) {
         feld=new PlayerType[6][7];
         for (int y=0;y<6;y++){
             for (int x=0;x<7;x++){
@@ -27,63 +26,10 @@ public class ViergewinntModel {
         }
         spielerAktuell=PlayerType.RED;
         gameState=GameState.ONGOING;
-        this.gameID=gameID;
         this.user1=user1;
         this.user2=user2;
     }
 
-
-    private static GameState readGameState(int state){
-        switch (state){
-            case 1:return GameState.USER1WON;
-            case 2:return GameState.USER2WON;
-            default:return GameState.ONGOING;
-        }
-    }
-    /**
-     * Liest den Spieler aus
-     * @param spieler Spieler als int
-     * @return das Spieler als Figur
-     */
-    private static PlayerType readSpieler(int spieler){
-        switch (spieler){
-            case 1:return PlayerType.YELLOW;
-            case 0:return PlayerType.RED;
-            default:return PlayerType.NO_PLAYER;
-        }
-    }
-    /**
-     *Liest den Spielstand aus
-     * @param gameData Spielstand als String
-     * @return das ausgewertete Spielfeld
-     */
-    private static PlayerType[][] readGameData(String gameData){
-        PlayerType[][] readFeld = new PlayerType[6][7];
-        if (gameData == null || gameData.isEmpty()) {
-            for (int x = 0; x < 6; x++) {
-                for (int y = 0; y < 7; y++) {
-                    readFeld[x][y] = PlayerType.NO_PLAYER;
-                }
-            }
-            return readFeld;
-        }
-        String[] reihe = gameData.split(";");
-        for (int i = 0; i < reihe.length; i++){
-            String[] daten = reihe[i].split(",");
-            for (int x=0;x<7;x++){
-                readFeld[i][x]=readSpieler(Integer.decode(daten[x]));
-            }
-        }
-        return readFeld;
-    }
-    /**
-     * Spielzug einleiten
-     * @param x eingabe
-     * @param time  addierte Zeit
-     */
-    public void  update(Integer x,float time){
-        if(x!=null) einsetzen(x);
-    }
 
     /**
      * Spielzug
@@ -193,10 +139,6 @@ public class ViergewinntModel {
         return stringFeld;
     }
 
-    private PlayerType getSpielerAktuell() {
-        return spielerAktuell;
-    }
-
     public String getUsernameAktuell() {
         if (spielerAktuell == PlayerType.RED) {
             return user1;
@@ -209,9 +151,6 @@ public class ViergewinntModel {
         return gameState;
     }
 
-    public int getGameID() {
-        return gameID;
-    }
 
     public String getUser1() {
         return user1;

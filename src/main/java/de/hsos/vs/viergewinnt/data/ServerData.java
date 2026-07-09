@@ -131,17 +131,6 @@ public final class ServerData {
     }
 
 
-    /**
-     * Abmeldung eines Accounts
-     * @param sessionID SessionID des Accounts der sich abmelden möchte
-     */
-    public void removeSession(String sessionID) {
-        loggedInAccounts.remove(httpSessionToAccount.get(sessionID));
-        String username = httpSessionToAccount.get(sessionID);
-        httpSessionToAccount.remove(sessionID);
-        accountToHttpSession.remove(username);
-    }
-
     public boolean isAccountsLoggedIn(String username) {
         return loggedInAccounts.contains(username);
     }
@@ -289,7 +278,7 @@ public final class ServerData {
      */
     private int newGame(String user1, String  user2) {
         int gameID = ++gameIDCounter;
-        ViergewinntModel game = new ViergewinntModel(gameID, user1, user2);
+        ViergewinntModel game = new ViergewinntModel(user1, user2);
         games.put(gameID,game);
         System.out.println("Neues Game mit " + user1 + " und " + user2);
         return gameID;
@@ -434,12 +423,7 @@ public final class ServerData {
 
 
     private void startBotChecker(String username){
-        Runnable botCheckerRunnable = new Runnable() {
-            @Override
-            public void run() {
-                checkForBot(username);
-            }
-        };
+        Runnable botCheckerRunnable = () -> checkForBot(username);
         botCheckers = botChecker.schedule(botCheckerRunnable, 10, TimeUnit.SECONDS);
         System.out.println("Bot checker gestartet...");
     }
