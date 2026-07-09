@@ -218,16 +218,12 @@ public class VierGewinntWebSocket {
         int column = Integer.parseInt(data.get("column").toString());
         int gameID = Integer.parseInt(data.get("gameID").toString());
 
-        System.out.println("GAME TURN:");
-        System.out.println("USERNAME: " + username);
-        System.out.println("GAME ID: " + gameID);
-        System.out.println("COLUMN: " + column +"\n");
-
         String[] usernames = serverData.getUsernamesOfGame(gameID);
         String messageJson = serverData.gameTurn(username, gameID, column);
 
+        System.out.println("GAME TURN:" + " Username: " + username + " GameID: " + gameID + " COLUMN: " + column);
         if (messageJson.equals("FALSCHER SPIELER AM ZUG")) {
-            System.out.println("FALSCHER SPIELER AM ZUG");
+            System.out.println("FALSCHER SPIELER AM ZUG\n");
         } else {
             try {
                 sendMessagetoTwoClients(messageJson, usernames[0], usernames[1]);

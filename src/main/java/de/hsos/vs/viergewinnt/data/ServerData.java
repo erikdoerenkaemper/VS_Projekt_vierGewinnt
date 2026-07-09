@@ -179,8 +179,11 @@ public final class ServerData {
             accountToHttpSession.remove(username);
             httpSessionToAccount.remove(sessionID);
             loggedInAccounts.remove(username);
-            queue.remove(username);
             lastPings.remove(username);
+
+            if (queue.remove(username)){
+                System.out.println("Durch Logout aus Warteschlange entfernt: " + username);
+            }
         } catch (NullPointerException e) {
             System.out.println("Logout Null");
             System.out.println(e.getMessage());
@@ -437,7 +440,6 @@ public final class ServerData {
                 checkForBot(username);
             }
         };
-        System.out.println("Bot checker starten...");
         botCheckers = botChecker.schedule(botCheckerRunnable, 10, TimeUnit.SECONDS);
         System.out.println("Bot checker gestartet...");
     }
