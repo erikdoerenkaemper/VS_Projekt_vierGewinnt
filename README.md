@@ -1,15 +1,55 @@
-# LetterBoard
+# Vier Gewinnt
 
 ## Idee
 
-Auf einem Gitter von Zellen können Nutzer formatierte (Font, Farbe) Buchstaben eintragen und damit ein Wort bilden.
-Das Gitter wird von einem Server verwaltet und der aktuelle Zustand an alle Clienten (Browser) übermittelt.
+Beliebig viele Clients können auf einen Server zugreifen und dort gegen andere Clients das Spiel „Vier Gewinnt“ spielen.  Die Clients können Accounts erstellen und sich in diese einloggen.  
+Über einen Webbrowser können sie ein Userinterface bedienen, welches mittels HTML und JavaScript erstellt wurde. 
+Die im Server eingehenden Nachrichten müssen mit Validierungsdaten vom Client authentisiert werden. Für die sichere Übertragung von Anmeldedaten bei einer Registrierung eines neuen Accounts wird asymmetrische Verschlüsselung mittels RSA-Algorithmus eingesetzt. 
+Neben dem Webclient gibt es einen nativen Client, der als Botgegner agiert und automatisch vom Server gestartet werden kann.
 
 ## Aufbau der Applikation
 
-Das Projekt besteht aus einer Html-Datei `index.html` als Frontend und einem 
-Servlet `LetterBoardServlet` als Backend, das ein Web-API implementiert. Im Frontend werden (asynchrone) JavaScript-Funktionen 
-benutzt, um die API-Methoden aufzurufen.
+Das Projekt besteht aus einer Webanwendung aus Html-, JavScript- und Css-Dateien als Frontend und einem 
+Server der sich aus einem Servlet für HTTP Kommunikation und einem Websocket-Serverendpoint zusammensetzt als Backend. 
+Im Frontend werden (asynchrone) JavaScript-Funktionen benutzt, um Http- und Websocket-Nachrichten an den Server zu senden und entgegenzunehmen.
+
+### Architektur-Diagramm (Mermaid Flowchart)
+
+```mermaid
+
+---
+config:
+  layout:  elk
+  theme: base
+---
+graph
+    subgraph Clients
+        Webclient
+        NativerClient
+    end
+
+    subgraph Server
+        Servlet
+        WebSocket
+        ServerData
+    end
+
+    Webclient -->|HTTP Request| Servlet
+    Servlet -->|HTTP Response| Webclient
+
+    Webclient -->|WebSocket Message| WebSocket
+    WebSocket -->|WebSocket Message| Webclient
+
+    NativerClient -->|HTTP Request| Servlet
+    Servlet -->|HTTP Response| NativerClient
+
+    NativerClient -->|WebSocket Message| WebSocket
+    WebSocket -->|WebSocket Message| NativerClient
+
+    Servlet -.->|Zugriff DataLayer| ServerData
+    WebSocket -.->|Zugriff DataLayer| ServerData
+
+```
 
 ## Erzeugung und Nutzung
 
@@ -20,19 +60,7 @@ geöffnet, editiert und gestartet werden. Das Projekt kann ohne grafisches IDE a
 
 > mvn package
 
-Für das Deployment sollten die Mechanismen des IDE zur Einrichtung und Verwaltung des
-Applikationsservers genutzt werden. Des Weiteren ist auch die testweise eines Containers mit dem Server zur Ausführung der Applikation via `Maven Cargo` möglich.
-Beispiel (Installation in einen Tomcat 10-Container hinein) unter Linux:
+Die von Maven erzeugte war-Datei kann in einem Tomcat-Server betrieben werden. Für die Nutzung des Bots muss die jar-Datei VierGewinntNativerClientBot-1.0-jar-with-dependencies.jar im Arbeitsverzeichnis des Tomcat Servers vorliegen.
 
-> mvn verify org.codehaus.cargo:cargo-maven3-plugin:run -Dcargo.maven.containerId=tomcat10x -Dcargo.maven.containerUrl=https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat/11.0.18/tomcat-11.0.18.zip
+Zugriff auf die App im Browser: http://localhost:8080/VS_Projekt_vierGewinnt/
 
-Zugriff auf die App im Browser: http://localhost:8080/VS_P08_LetterBoard/
-
-Es kann auch eine Run-Configuration für den Start via IntelliJ erstellt werden. Dazu sollte ggf. vorher
-der Ordner .idea gelöscht und durch Neustart von IntelliJ erstellt werden.
-
-## Versionen
-
-### Version v0
-
-Beinhaltet nur die die Basis-Funktionalität: GET und POST sind ausgeführt. 
