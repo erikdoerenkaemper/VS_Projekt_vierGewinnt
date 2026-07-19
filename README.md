@@ -22,7 +22,7 @@ config:
   layout:  elk
   theme: base
 ---
-graph
+graph TD
     subgraph Clients
         Webclient
         NativerClient
