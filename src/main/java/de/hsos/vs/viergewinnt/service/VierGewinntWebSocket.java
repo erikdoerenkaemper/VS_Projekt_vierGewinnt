@@ -111,7 +111,6 @@ public class VierGewinntWebSocket {
      */
     private void connectGameSession(String username, String sessionID, int gameID){
         // Alten LobbyWebSocket löschen
-
         serverData.removeWebSocketSessionMapping(username, serverData.getWebSocketSessionID(username));
 
         // Neuen GameWebSocket speichern
@@ -169,14 +168,8 @@ public class VierGewinntWebSocket {
             }
 
 
-
             Session session1 = serverData.getWebSocketSession(sessionID);
             Session session2 = serverData.getWebSocketSession(sessionID2);
-
-
-
-
-
 
 
             if (session1 == null) {
@@ -226,6 +219,7 @@ public class VierGewinntWebSocket {
             System.out.println("FALSCHER SPIELER AM ZUG\n");
         } else {
             try {
+                System.out.println(messageJson);
                 sendMessagetoTwoClients(messageJson, usernames[0], usernames[1]);
 
             } catch (IOException e) {
@@ -241,7 +235,6 @@ public class VierGewinntWebSocket {
         String[] usernames = serverData.getUsernamesOfGame(gameID);
         String messageJson = serverData.giveUp(username, gameID);
         try {
-            System.out.println(messageJson);
             sendMessagetoTwoClients(messageJson, usernames[0], usernames[1]);
 
         } catch (IOException e) {

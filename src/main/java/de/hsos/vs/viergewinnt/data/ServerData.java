@@ -3,10 +3,13 @@ package de.hsos.vs.viergewinnt.data;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.common.hash.Hashing;
+
 import de.hsos.vs.viergewinnt.data.gameLogic.GameState;
-import de.hsos.vs.viergewinnt.data.gameLogic.ViergewinntModel;
+import de.hsos.vs.viergewinnt.data.gameLogic.VierGewinntModel;
 import de.hsos.vs.viergewinnt.data.userData.Account;
+
 import jakarta.websocket.Session;
 
 import javax.crypto.BadPaddingException;
@@ -29,12 +32,13 @@ public final class ServerData {
     private static ServerData instance;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // Accounts
     private Map<String, Account> accounts = new HashMap<>();
+    private final List<String> loggedInAccounts = new ArrayList<>(); // Accounts die angemledet sind
+
+    // HTTP-Sessions
     private final  ConcurrentHashMap<String, String> httpSessionToAccount = new ConcurrentHashMap<>();
     private final  ConcurrentHashMap<String, String> accountToHttpSession = new ConcurrentHashMap<>();
-    private final List<String> loggedInAccounts = new ArrayList<>(); // Accounts die angemledet sind
-    private final static Map<String, Long> lastPings = new ConcurrentHashMap<>();
-
 
     // Websocktdata
     private final Map<String, Session> websocketSessions = new HashMap<>();
@@ -43,25 +47,26 @@ public final class ServerData {
 
     // Gamedata
     private final Queue<String> queue =  new LinkedList<>(); // Warteschlange
-    private final  Map<Integer, ViergewinntModel> games = new HashMap<>();
+    private final  Map<Integer, VierGewinntModel> games = new HashMap<>();
     private final Map<String, Integer> usernameToGameID = new HashMap<>();
     private int gameIDCounter;
 
+    // Ping
+    private final static Map<String, Long> lastPings = new ConcurrentHashMap<>();
     private final ScheduledExecutorService pingChecker = Executors.newSingleThreadScheduledExecutor();
+
+    // Bot
     private final ScheduledExecutorService botChecker = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> botCheckers;
 
+    // Asymmetrische Verschlüsselung
     private PrivateKey privateKey;
     private PublicKey publicKey;
 
 
 
-
-
     // Instanzierung
-    private ServerData() {
-
-    }
+    private ServerData() {}
 
     public static ServerData getInstance() {
         if (instance == null) {
@@ -69,6 +74,8 @@ public final class ServerData {
         }
         return instance;
     }
+
+
 
     public void init() {
         generateRsa();
@@ -80,6 +87,7 @@ public final class ServerData {
         pingChecker.shutdown();
         botChecker.shutdown();
     }
+
 
 
 
@@ -108,11 +116,14 @@ public final class ServerData {
 
 
 
+
+
+
+
     // Session Management
     public String getUsernameFromSession(String sessionID) {
         return httpSessionToAccount.get(sessionID);
     }
-
 
     /**
      * Anmeldung eines Accounts
@@ -130,7 +141,6 @@ public final class ServerData {
                 +"\n");
     }
 
-
     public boolean isAccountsLoggedIn(String username) {
         return loggedInAccounts.contains(username);
     }
@@ -141,18 +151,18 @@ public final class ServerData {
         if (gameID != -1) {
             System.out.println("Laufendes Spiel automatisch beenden...");
             String[] usernames = getUsernamesOfGame(gameID);
-            String loggenInUsername;
+            String loggedInUsername;
             if (usernames[0].equals(username)) {
-                loggenInUsername = usernames[1];
+                loggedInUsername = usernames[1];
             } else{
-                loggenInUsername = usernames[0];
+                loggedInUsername = usernames[0];
             }
             String messageJson = giveUp(username, gameID);
 
             try {
                 System.out.println("Nachricht an den verbleibenden user im Game senden");
                 System.out.println(messageJson);
-                String sessionID1 = getWebSocketSessionID(loggenInUsername);
+                String sessionID1 = getWebSocketSessionID(loggedInUsername);
                 Session session1 = getWebSocketSession(sessionID1);
                 session1.getBasicRemote().sendText(messageJson);
 
@@ -181,6 +191,9 @@ public final class ServerData {
 
 
 
+
+
+
     public String getIPAddress(){
         try {
             return Inet4Address.getLocalHost().getHostAddress();
@@ -190,30 +203,7 @@ public final class ServerData {
     }
 
 
-    public void ping(String username, int gameID){
-        long lastPing = System.currentTimeMillis();
-        lastPings.put(username,lastPing);
-        usernameToGameID.put(username,gameID);
-    }
 
-
-
-    private void checkPing(){
-        System.out.println("Ping checken...");
-        List<String> removedAccounts = new ArrayList<>();
-        for (String username : lastPings.keySet()) {
-            long lastPing = lastPings.get(username);
-            if (System.currentTimeMillis() - lastPing > 10 * 1000) {
-                System.out.println("Inaktiver User gefunden: " + username);
-                logoutUser(username);
-                removedAccounts.add(username);
-                System.out.println("Automatisch abgemeldet: " + username);
-            }
-        }
-        for  (String username : removedAccounts) {
-            lastPings.remove(username);
-        }
-    }
 
 
 
@@ -249,6 +239,9 @@ public final class ServerData {
     }
 
 
+
+
+
     // Game Management
     public NewGameReturn addQueue(String username){
         if (queue.isEmpty()) {
@@ -258,6 +251,7 @@ public final class ServerData {
             return null;
         }
         else {
+            // Botchecker beenden
             if (botCheckers != null) {
                 botCheckers.cancel(false);
                 botCheckers = null;
@@ -269,7 +263,6 @@ public final class ServerData {
         }
     }
 
-
     /**
      * Erstellt ein neues Spiel mit den übergebenen Usernamen
      * @param user1 Erster User
@@ -278,12 +271,11 @@ public final class ServerData {
      */
     private int newGame(String user1, String  user2) {
         int gameID = ++gameIDCounter;
-        ViergewinntModel game = new ViergewinntModel(user1, user2);
+        VierGewinntModel game = new VierGewinntModel(user1, user2);
         games.put(gameID,game);
         System.out.println("Neues Game mit " + user1 + " und " + user2);
         return gameID;
     }
-
 
     /**
      * Führt den Ablauf eines Spielzugs eines Spielers durch.
@@ -293,7 +285,7 @@ public final class ServerData {
      * @return Message als JSON formatiert, der an beide Clients des Spiels gesendet werden kann
      */
     public String gameTurn(String username, int gameID, int column){
-        ViergewinntModel game = games.get(gameID);
+        VierGewinntModel game = games.get(gameID);
 
         if (game.getUsernameAktuell().equals(username)){
             game.einsetzen(column);
@@ -359,7 +351,6 @@ public final class ServerData {
         Account account2 = getAccount(users[1]);
         String gameState;
 
-
         usernameToGameID.put(users[0], -1);
         usernameToGameID.put(users[1], -1);
 
@@ -375,8 +366,6 @@ public final class ServerData {
         games.remove(gameID);
         saveData();
 
-
-
         Map<String, String[]> map = new HashMap<>();
         map.put("type" , new String[]{"GIVE_UP"});
         map.put("game_state", new String[] {gameState});
@@ -388,7 +377,6 @@ public final class ServerData {
         }
     }
 
-
     /**
      * Gibt die beiden Usernames der Accounts zurück die in einem Spiel gegeneinander spielen.
      * @param gameID GameID des Spiels
@@ -396,7 +384,7 @@ public final class ServerData {
      */
     public String[] getUsernamesOfGame(int gameID){
         String[] usernames = new String[2];
-        ViergewinntModel game = games.get(gameID);
+        VierGewinntModel game = games.get(gameID);
         usernames[0] = game.getUser1();
         usernames[1] = game.getUser2();
         return usernames;
@@ -422,6 +410,50 @@ public final class ServerData {
     }
 
 
+
+
+
+    // Ping
+
+    /**
+     * Verarbeitet von Clients eingehende Pings.
+     * @param username Username des Clients der einen Ping gesendet hat.
+     * @param gameID Aktuelle GameID des Clients. Der Wert ist -1 wenn sich der Client in keinem Spiel bedindet.
+     */
+    public void ping(String username, int gameID){
+        long lastPing = System.currentTimeMillis();
+        lastPings.put(username,lastPing);
+        usernameToGameID.put(username,gameID);
+    }
+
+    /**
+     * Überprüft alle letzten Pings.
+     * Wenn ein Ping länger als 10 Sekunden in der Vergangenheit liegt,
+     * wird der Account automatisch abgemeldet.
+     */
+    private void checkPing(){
+        System.out.println("Ping checken...");
+        List<String> removedAccounts = new ArrayList<>();
+        for (String username : lastPings.keySet()) {
+            long lastPing = lastPings.get(username);
+            if (System.currentTimeMillis() - lastPing > 10 * 1000) {
+                System.out.println("Inaktiver User gefunden: " + username);
+                logoutUser(username);
+                removedAccounts.add(username);
+                System.out.println("Automatisch abgemeldet: " + username);
+            }
+        }
+        for  (String username : removedAccounts) {
+            lastPings.remove(username);
+        }
+    }
+
+
+
+
+
+
+    // Botgegner
     private void startBotChecker(String username){
         Runnable botCheckerRunnable = () -> checkForBot(username);
         botCheckers = botChecker.schedule(botCheckerRunnable, 10, TimeUnit.SECONDS);
@@ -433,9 +465,6 @@ public final class ServerData {
             startBot();
         }
     }
-
-
-    // Botgegner
 
     /**
      * Überprüft welcher Bot aktuell nicht bereits
@@ -478,6 +507,13 @@ public final class ServerData {
 
 
 
+
+
+
+
+
+
+
     // Validierung von Nachrichten
     public String getData(Map<?,?> message){
         // Felder auslesen
@@ -492,8 +528,6 @@ public final class ServerData {
         }
     }
 
-
-    // Überprüfung des Hashes
     public boolean validate(String sessionID, String data, String hash) {
         //System.out.println("Erhaltene SessionID: " + sessionID);
         String username = httpSessionToAccount.get(sessionID);
@@ -528,7 +562,14 @@ public final class ServerData {
         return hash.equals(sha256);
     }
 
-    // Generierung der RSA Schlüssel
+
+
+
+
+
+
+
+    // Asymmetrische Verschlüsselung
     private void generateRsa(){
         //https://www.baeldung.com/java-rsa
         KeyPairGenerator generator;
@@ -562,9 +603,7 @@ public final class ServerData {
             byte[] encryptedMessageBytes = Base64.getDecoder().decode(encryptedMessage);
             byte[] decryptedMessageBytes = decryptCipher.doFinal(encryptedMessageBytes);
 
-
             return new String(decryptedMessageBytes, StandardCharsets.UTF_8);
-
         } catch (NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException e) {
             System.out.println("decryptMessage: " + e.getMessage());
             throw new RuntimeException(e);
@@ -601,7 +640,7 @@ public final class ServerData {
 
             try {
                 objectMapper.writerWithDefaultPrettyPrinter().writeValue((accountFile), botAccounts);
-                System.out.println("Bot Accounts gespeichert (?)");
+                System.out.println("Bot Accounts gespeichert");
             } catch (IOException e) {
                 System.out.println("Fehler beim Speichern der Botaccounts:");
             }

@@ -2,7 +2,7 @@ package de.hsos.vs.viergewinnt.data.userData;
 
 public class Account {
     private String passwordHash;
-    private publicData publicData;
+    private PublicData publicData;
 
     public Account(){
         publicData = null;
@@ -10,7 +10,7 @@ public class Account {
     }
 
     public Account(String username, String passwordHash) {
-        this.publicData = new publicData(username);
+        this.publicData = new PublicData(username);
         this.passwordHash = passwordHash;
     }
 
@@ -31,7 +31,7 @@ public class Account {
         return passwordHash;
     }
 
-    public publicData getPublicData() {
+    public PublicData getPublicData() {
         return publicData;
     }
 
@@ -39,7 +39,7 @@ public class Account {
         this.passwordHash = passwordHash;
     }
 
-    public void setPublicData(publicData publicData) {
+    public void setPublicData(PublicData publicData) {
         this.publicData = publicData;
     }
 }

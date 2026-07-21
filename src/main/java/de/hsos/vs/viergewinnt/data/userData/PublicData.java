@@ -1,16 +1,16 @@
 package de.hsos.vs.viergewinnt.data.userData;
 
-public class publicData {
+public class PublicData {
     private String username;
     private int wins;
     private int losses;
     private int draws;
 
-    public publicData(String username) {
+    public PublicData(String username) {
         this.username = username;
     }
 
-    public publicData() {}
+    public PublicData() {}
 
 
     public String getUsername() {

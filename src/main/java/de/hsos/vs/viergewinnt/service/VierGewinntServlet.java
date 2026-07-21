@@ -3,7 +3,7 @@ package de.hsos.vs.viergewinnt.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.hsos.vs.viergewinnt.data.ServerData;
 import de.hsos.vs.viergewinnt.data.userData.Account;
-import de.hsos.vs.viergewinnt.data.userData.publicData;
+import de.hsos.vs.viergewinnt.data.userData.PublicData;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -72,7 +72,7 @@ public class VierGewinntServlet extends HttpServlet {
                 Account account = serverData.getAccount(username);
 
                 // Benutzerdaten an Client senden
-                publicData publicData = account.getPublicData();
+                PublicData publicData = account.getPublicData();
                 String publicDataJson = objectMapper.writeValueAsString(publicData);
                 response.getWriter().write(publicDataJson);
             }
@@ -103,10 +103,10 @@ public class VierGewinntServlet extends HttpServlet {
 
         // keine gültige Rest-Adresse
         } else {
-                // Antwort an Client senden
-                response.getWriter().write("Unbekannte REST-Adresse");
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            }
+            // Antwort an Client senden
+            response.getWriter().write("Unbekannte REST-Adresse");
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        }
     }
 
 
@@ -127,10 +127,8 @@ public class VierGewinntServlet extends HttpServlet {
 
             // Daten holen
             String encryptedData  = request.getReader().lines().collect(Collectors.joining());
-
             // Nachricht entschlüsseln
             String decryptedData = serverData.decryptMessage(encryptedData);
-
 
             Map<?, ?> decryptedDataMap = objectMapper.readValue(decryptedData, Map.class);
             String username = decryptedDataMap.get("username").toString();
@@ -217,7 +215,9 @@ public class VierGewinntServlet extends HttpServlet {
             Map<?, ?> data = objectMapper.readValue(request.getInputStream(), Map.class);
             Map<?, ?> validatedData = objectMapper.readValue(serverData.getData(data), Map.class); // data != null wenn Validierung erfolgreich
 
+            System.out.println(data);
             System.out.println(validatedData);
+
 
             if (validatedData == null) {
                 // Antwort an Client senden
@@ -226,14 +226,13 @@ public class VierGewinntServlet extends HttpServlet {
 
             } else {
                 String username = serverData.getUsernameFromSession(sessionID);
-                System.out.println("Abgemeldet: " + username);
                 serverData.logoutUser(username);
+                System.out.println("Abgemeldet: " + username);
 
                 response.getWriter().write("Abmeldung erfolgreich");
                 response.setStatus(HttpServletResponse.SC_OK);
             }
         }
-
 
 
         // keine gültige Rest-Adresse

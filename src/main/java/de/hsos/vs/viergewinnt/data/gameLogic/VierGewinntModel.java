@@ -7,7 +7,7 @@ package de.hsos.vs.viergewinnt.data.gameLogic;
  *  </p>
  *  @author Daniel Röwekamp
  */
-public class ViergewinntModel {
+public class VierGewinntModel {
     private final PlayerType[][] feld;
     private  PlayerType spielerAktuell;
     private  GameState gameState;
@@ -17,7 +17,7 @@ public class ViergewinntModel {
     /**
      *  Initialisiert ein neues Spiel
      */ // Create
-    public ViergewinntModel(String user1, String user2) {
+    public VierGewinntModel(String user1, String user2) {
         feld=new PlayerType[6][7];
         for (int y=0;y<6;y++){
             for (int x=0;x<7;x++){
