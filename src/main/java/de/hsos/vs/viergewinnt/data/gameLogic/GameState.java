@@ -7,7 +7,7 @@ package de.hsos.vs.viergewinnt.data.gameLogic;
  *      <li>{@link #USER1WON} – Das Spiel wurde erfolgreich beendet</li>
  *      <li>{@link #DRAW} - Das Spiel wurde unentschieden beendet</li>
  *  </ul>
- *  @author Samantha Fuest, Daniel Röwekamp
+ *  @author Daniel Röwekamp
  */
 public enum GameState {
     ONGOING , USER2WON , USER1WON, DRAW

@@ -26,48 +26,114 @@ import java.util.concurrent.*;
 import java.security.*;
 
 /**
- * Hält globale Daten auf die Sowohl Servlet als auch WebSockets zugreifen
+ * Zentrale Singelton Klasse zwischen Servlet und Websocket.
+ * Hält globale Daten auf die sowohl Servlet als auch WebSockets zugreifen.
+ * Beinhaltet die Buisnesslogik.
  */
 public final class ServerData {
+    /**
+     * Singelton Instanz
+     */
     private static ServerData instance;
+    /**
+     * ObjectMapper zum konvertieren zwischen Objekten und JSON-Strings.
+     */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // Accounts
+    /**
+     * Hält alle erstellten Accounts. Benutzernamen dienen als Schlüssel
+     */
     private Map<String, Account> accounts = new HashMap<>();
+    /**
+     * Hält alle angemeldeten Accounts.
+     */
     private final List<String> loggedInAccounts = new ArrayList<>(); // Accounts die angemledet sind
 
     // HTTP-Sessions
+    /**
+     * Zuordnung von http-SessionID -> Benutzername
+     */
     private final  ConcurrentHashMap<String, String> httpSessionToAccount = new ConcurrentHashMap<>();
+    /**
+     * Zuordnung von Benutzername -> http-SessionID
+     */
     private final  ConcurrentHashMap<String, String> accountToHttpSession = new ConcurrentHashMap<>();
 
     // Websocktdata
+    /**
+     * Hält alle Websocketsessions zum senden von Daten über den Websocket. Websocket-SessionIDs dienen als Schlüssel.
+     */
     private final Map<String, Session> websocketSessions = new HashMap<>();
+    /**
+     * Zuordnung von Websocket-SessionID -> Benutzername
+     */
     private final Map<String, String> webSocketSessionToUsername = new HashMap<>();
+    /**
+     * Zuordnung von Benutzername -> Websocket-SessionID
+     */
     private final Map<String, String> usernameToWebSocketSession = new HashMap<>();
 
     // Gamedata
-    private final Queue<String> queue =  new LinkedList<>(); // Warteschlange
+    /**
+     * Warteschlange mit Benutzernamen.
+     */
+    private final Queue<String> queue =  new LinkedList<>();
+    /**
+     * Hält alle aktiv laufenden Spiele. GameIDs dienen als Schlüssel.
+     */
     private final  Map<Integer, VierGewinntModel> games = new HashMap<>();
+    /**
+     * Zuordnung von Benutzername -> GameID
+     */
     private final Map<String, Integer> usernameToGameID = new HashMap<>();
+    /**
+     * Counter zum erstellen neuer GameIDs
+     */
     private int gameIDCounter;
 
     // Ping
+    /**
+     * Hält zu angemeldeten Accounts die Zeitpunkte des letzten Pings. Benutzernamen dienen als Schlüssel.
+     */
     private final static Map<String, Long> lastPings = new ConcurrentHashMap<>();
+    /**
+     * Executor zum regelmäßigen Überprüfen der Pings, um inaktive Accounts abzumelden.
+     */
     private final ScheduledExecutorService pingChecker = Executors.newSingleThreadScheduledExecutor();
 
     // Bot
+    /**
+     * Executor zum Überprüfen der Warteschlange. Entscheidet ob ein Bot gestartet werden soll.
+     */
     private final ScheduledExecutorService botChecker = Executors.newSingleThreadScheduledExecutor();
-    private ScheduledFuture<?> botCheckers;
+    /**
+     * Hält den aktuellen Auftrag des botCheckers um ihn gegebenenfalls zurückziehen zu können.
+     */
+    private ScheduledFuture<?> botCheckerTask;
 
     // Asymmetrische Verschlüsselung
+    /**
+     * Hält den generierten privaten RSA Schlüssel des Servers. Zum entschlüsselen von Nachrichten.
+     */
     private PrivateKey privateKey;
+    /**
+     * Hält den generierten öffentlichen RSA Schlüssel des Servers. Zum verschlüsseln von Nachrichten.
+     */
     private PublicKey publicKey;
 
 
 
     // Instanzierung
+    /**
+     * Singelton Instanz
+     */
     private ServerData() {}
 
+    /**
+     * Singelton Instanz-Getter
+     * @return Instanz von ServerData
+     */
     public static ServerData getInstance() {
         if (instance == null) {
             instance = new ServerData();
@@ -76,13 +142,20 @@ public final class ServerData {
     }
 
 
-
+    /**
+     * Wird beim Start des Servers aufgerufen. Initialisiert die RSA-Verschlüsselung,
+     * läd persistierten Daten und startet den pingChecker.
+     */
     public void init() {
         generateRsa();
         loadData();
         pingChecker.scheduleAtFixedRate(this::checkPing,0,1,TimeUnit.SECONDS);
     }
 
+    /**
+     * Wird beim herunterfahren des Servers vom Servlet aufgerufen.
+     * Beendent die beiden Executor.
+     */
     public void shutdown() {
         pingChecker.shutdown();
         botChecker.shutdown();
@@ -98,6 +171,9 @@ public final class ServerData {
         return accounts.get(username);
     }
 
+    /**
+     * Speichert einen neu erstellten und schreibt diesen direkt in accounts.json
+     */
     public void putAccount(String username, Account account) {
         accounts.put(username, account);
         saveData();
@@ -109,6 +185,11 @@ public final class ServerData {
                 +"\n");
     }
 
+    /**
+     * Gibt zurück ob ein Benutzername vergeben ist oder nicht.
+     * @param username Benutzername der überprüft werden soll.
+     * @return True wenn vergeben, false wenn nicht vergeben.
+     */
     public boolean accountExists(String username) {
         return accounts.containsKey(username);
     }
@@ -126,11 +207,11 @@ public final class ServerData {
     }
 
     /**
-     * Anmeldung eines Accounts
+     * Anmeldung eines Accounts.
      * @param sessionID SessionID des Accounts der sich anmelden möchte
      * @param username Usernamedes Accounts der sich anmelden möchte
      */
-    public void addSessionToAccount(String sessionID, String username) {
+    public void loginAccount(String sessionID, String username) {
         ping(username, -1);
         httpSessionToAccount.put(sessionID, username);
         accountToHttpSession.put(username, sessionID);
@@ -145,7 +226,13 @@ public final class ServerData {
         return loggedInAccounts.contains(username);
     }
 
-    public void logoutUser(String username) {
+    /**
+     * Abmeldung eines Accounts.
+     * Falls der Account Teil eines laufenden Spiels ist, wird das Spiel beendet
+     * und als ein Aufgeben des abgemeldeten Spielers gewertet.
+     * @param username Benutzername des Accounts der abgemeldet werden soll.
+     */
+    public void logoutAccount(String username) {
         // Aktives Game beenden
         int gameID = usernameToGameID.get(username);
         if (gameID != -1) {
@@ -190,10 +277,9 @@ public final class ServerData {
     }
 
 
-
-
-
-
+    /**
+     * @return IP Adresse des Servers
+     */
     public String getIPAddress(){
         try {
             return Inet4Address.getLocalHost().getHostAddress();
@@ -243,6 +329,15 @@ public final class ServerData {
 
 
     // Game Management
+
+    /**
+     * Fügt einen Benutznamen zur leeren Warteschlange hinzu.
+     * Falls bereits ein anderer Client in der Warteschlange wartet,
+     * wird ein neuen Spiel mit den beiden Clients erstellt.
+     * @param username Benutzername, der in die Warteschlange hinzugefügt werden soll.
+     * @return GameID und Benutzername des gegnerieschen gematchten Spielers.
+     * Null wenn kein neues Spiel erstellt wurde.
+     */
     public NewGameReturn addQueue(String username){
         if (queue.isEmpty()) {
             queue.add(username);
@@ -252,9 +347,9 @@ public final class ServerData {
         }
         else {
             // Botchecker beenden
-            if (botCheckers != null) {
-                botCheckers.cancel(false);
-                botCheckers = null;
+            if (botCheckerTask != null) {
+                botCheckerTask.cancel(false);
+                botCheckerTask = null;
             }
             String user2 =  queue.poll();
             int gameID = newGame(username, user2);
@@ -279,6 +374,8 @@ public final class ServerData {
 
     /**
      * Führt den Ablauf eines Spielzugs eines Spielers durch.
+     * Vor der ausführung wird überprüft ob der Benutzername
+     * dem Spieler der am Zug ist entspricht
      * @param username Username des Spielers der aufgegeben hat
      * @param gameID GameID des Spiels
      * @param column Spalte auf dem Spielfeld die der Spieler ausgewählt hat
@@ -343,7 +440,7 @@ public final class ServerData {
      * Führt den Ablauf des Aufgebens eines Spielers durch.
      * @param username Username des Spielers der aufgegeben hat
      * @param gameID GameID des Spiels
-     * @return Message als JSON formatiert, der an beide Clients des Spiels gesendet werden kann
+     * @return Message als JSON formatiert, der an beide Clients des Spiels gesendet werden kann.
      */
     public String giveUp(String username, int gameID){
         String[] users = getUsernamesOfGame(gameID);
@@ -418,7 +515,7 @@ public final class ServerData {
     /**
      * Verarbeitet von Clients eingehende Pings.
      * @param username Username des Clients der einen Ping gesendet hat.
-     * @param gameID Aktuelle GameID des Clients. Der Wert ist -1 wenn sich der Client in keinem Spiel bedindet.
+     * @param gameID Aktuelle GameID des Clients. Der Wert ist -1 wenn sich der Client in keinem Spiel befindet.
      */
     public void ping(String username, int gameID){
         long lastPing = System.currentTimeMillis();
@@ -438,7 +535,7 @@ public final class ServerData {
             long lastPing = lastPings.get(username);
             if (System.currentTimeMillis() - lastPing > 10 * 1000) {
                 System.out.println("Inaktiver User gefunden: " + username);
-                logoutUser(username);
+                logoutAccount(username);
                 removedAccounts.add(username);
                 System.out.println("Automatisch abgemeldet: " + username);
             }
@@ -454,12 +551,23 @@ public final class ServerData {
 
 
     // Botgegner
+
+    /**
+     * Startet den botChecker.
+     * Nach 10 Sekunden überprüft dieser ob eine Bot gestartet werden soll.
+     * @param username Benutzername des Clients der in der Warteschlange wartet.
+     */
     private void startBotChecker(String username){
         Runnable botCheckerRunnable = () -> checkForBot(username);
-        botCheckers = botChecker.schedule(botCheckerRunnable, 10, TimeUnit.SECONDS);
+        botCheckerTask = botChecker.schedule(botCheckerRunnable, 10, TimeUnit.SECONDS);
         System.out.println("Bot checker gestartet...");
     }
 
+    /**
+     * Wird 10 Sekunden nach betreten der Warteschlange von {@code username} aufgerufen.
+     * Überprüft ob {@code username} immernoch in der Warteschlange wartet.
+     * @param username Benutzername des Clients der in der Warteschlange wartet.
+     */
     private void checkForBot(String username){
         if(queue.contains(username)){
             startBot();
@@ -467,8 +575,9 @@ public final class ServerData {
     }
 
     /**
-     * Überprüft welcher Bot aktuell nicht bereits
-     * in Verwendung ist und startet den ersten verfügbaren Bot.
+     * Überprüft welcher Bot-Account aktuell nicht bereits
+     * in Verwendung ist und startet einen Bot mit
+     * dem ersten verfügbaren Bot-Account.
      */
     private void startBot(){
         System.out.println("Verfügbaren Bot suchen...");
@@ -485,7 +594,7 @@ public final class ServerData {
 
     /**
      * Startet einen Botgegner.
-     * @param botName Name des Bots
+     * @param botName Benutzername des Bot-Accounts
      */
     private void startBot(String botName){
         System.out.println("Arbeitsverzeichnis: " + System.getProperty("user.dir"));
@@ -515,6 +624,15 @@ public final class ServerData {
 
 
     // Validierung von Nachrichten
+
+    /**
+     * Extrahiert das Data-Feld aus eine JSON-Message.
+     * Das Data-Feld enthält die eigentlichen Inhalt
+     * der Nachricht ohne die Validierungsdaten.
+     * @param message JSON-String inklusive Validierungsdaten.
+     * @return JSON-String ohne Validierungsdaten.
+     * Null falls Validierung fehlgeschalgen ist.
+     */
     public String getData(Map<?,?> message){
         // Felder auslesen
         String sessionID = message.get("sessionid").toString();
@@ -528,6 +646,14 @@ public final class ServerData {
         }
     }
 
+    /**
+     * Überprüft Validierungsdaten auf ihre Gültigkeit.
+     * @param sessionID SessionID, die in der Nachricht übergeben wurde.
+     * @param data Inhalt der eigentlichen Nachricht.
+     * @param hash Übergebener Hashwert, der überprüft werden muss.
+     * @return data, falls Validierungsdaten gültig.
+     * Null, falls Validierungsdaten ungültig.
+     */
     public boolean validate(String sessionID, String data, String hash) {
         //System.out.println("Erhaltene SessionID: " + sessionID);
         String username = httpSessionToAccount.get(sessionID);
@@ -570,6 +696,10 @@ public final class ServerData {
 
 
     // Asymmetrische Verschlüsselung
+
+    /**
+     * Generiert ein neues RSA-Schlüsselpaar.
+     */
     private void generateRsa(){
         //https://www.baeldung.com/java-rsa
         KeyPairGenerator generator;
@@ -585,6 +715,9 @@ public final class ServerData {
         publicKey = pair.getPublic();
     }
 
+    /**
+     * @return Öffentlicher Schlüssel Base64 verschlüsselt und PEM-Formatiert.
+     */
     public String getPublicKey(){
         String base64 =
                 Base64.getEncoder().encodeToString(publicKey.getEncoded());
@@ -594,6 +727,12 @@ public final class ServerData {
                 "\n-----END PUBLIC KEY-----";
     }
 
+    /**
+     * Entschlüsselt eine mit dem öffentlichen Schlüssel
+     * verschlüsselte Nachricht mit dem privaten Schlüssel.
+     * @param encryptedMessage  Verschlüsselte Nachricht
+     * @return Entschlüsselte Nachricht
+     */
     public String decryptMessage(String encryptedMessage){
         try {
             Cipher decryptCipher = Cipher.getInstance("RSA");
@@ -615,7 +754,9 @@ public final class ServerData {
 
     // Persistierung der Accounts
     /**
-     * Läd Accountdaten aus der Datei accounts.json
+     * Läd Accountdaten aus der Datei accounts.json.
+     * Falls die Datei nicht existiert, wird eine
+     * neue Datei mit den Bot-Accounts erstellt.
      */
     private void loadData(){
         File accountFile = new File("accounts.json");
@@ -648,7 +789,7 @@ public final class ServerData {
     }
 
     /**
-     * Speichert alle Accountdaten in eine Datei accounts.json
+     * Speichert alle Accounts in eine Datei accounts.json
      */
     private void saveData(){
         // Accounts

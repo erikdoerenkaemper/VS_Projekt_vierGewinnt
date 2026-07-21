@@ -150,7 +150,7 @@ public class VierGewinntServlet extends HttpServlet {
 
                 // Account speichern
                 serverData.putAccount(username, account);
-                serverData.addSessionToAccount(sessionID, username);
+                serverData.loginAccount(sessionID, username);
                 response.setStatus(HttpServletResponse.SC_OK);
             }
 
@@ -200,7 +200,7 @@ public class VierGewinntServlet extends HttpServlet {
                     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 } else {
                     // Anmedlung durchführen
-                    serverData.addSessionToAccount(sessionID, username);
+                    serverData.loginAccount(sessionID, username);
                     System.out.println("Angemeldet: " + username);
                     response.setStatus(HttpServletResponse.SC_OK);
                 }
@@ -226,7 +226,7 @@ public class VierGewinntServlet extends HttpServlet {
 
             } else {
                 String username = serverData.getUsernameFromSession(sessionID);
-                serverData.logoutUser(username);
+                serverData.logoutAccount(username);
                 System.out.println("Abgemeldet: " + username);
 
                 response.getWriter().write("Abmeldung erfolgreich");
