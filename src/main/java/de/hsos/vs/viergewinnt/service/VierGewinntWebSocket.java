@@ -18,11 +18,19 @@ import java.util.Map;
  */
 @ServerEndpoint("/game")
 public class VierGewinntWebSocket {
-
+    /**
+     * ObjectMapper zum konvertieren zwischen Objekten und JSON-Strings.
+     */
     private final ObjectMapper objectMapper = new ObjectMapper();
+    /**
+     * Singelton-Instanz von ServerData
+     */
     private final static ServerData serverData = ServerData.getInstance();
 
-
+    /**
+     * Wird bei einer neuen Websocket-Verbindung aufgerufen.
+     * Speichert die neue Session in ServerData.
+     */
     @OnOpen
     public void onOpen(Session session){ // Neue Verbindung
         System.out.println("\nOnOpen...");
@@ -30,6 +38,40 @@ public class VierGewinntWebSocket {
         System.out.println("Neue WebSocketSessionID: " + session.getId());
     }
 
+    /**
+     * Nimmt eingehende Websocket-Nachrichten entgegen.
+     * Die Nachrichten müssen im JSON-Formatiert sein
+     * und ein Feld mit dem Key "type" beinhalten.
+     * Anhand des Types wird die Verarbeitung der Nachricht bestimmt.
+     * Verfügbare Types:<br>
+     * 1. LOBBY_CONNECT: <br>
+     * Die Nachricht muss einen Benutzernamen enthalten.
+     * Die Websocket-Verbindung wird diesem Benutzernamen zugeordnet.<br>
+     * <br>
+     * 2. GAME_CONNECT:<br>
+     * Die Nachricht muss einen Benutzernamen und eine GameID enthalten.
+     * Die Websocket-Verbindung wird diesem Benutzernamen zugeordnet.
+     * Die GameID wird verwendet, um den Gegnerischen Client zu ermitteln.
+     * Es wird eine Nachricht des Typs USERNAMES zurpckgesendet
+     * die beide Usernames des Spiels enthält.<br>
+     * <br>
+     * 3. SEARCH_GAME:<br>
+     * Trägt den Client in die Warteschlange ein.
+     * Wenn ein Gegner gefunden wurde wird eine Nachricht
+     * des Typs GAME_FOUND zurückgesendet.<br>
+     * <br>
+     * 4. GAME_TURN:<br>
+     * Enthält einen Spielzug eines Clients.
+     * Das neue Spielfeld wird an beide Clients die
+     * an dem entsprechenden Spiel teilnehmen gesendet.<br>
+     * <br>
+     * 5. GIVE_UP:<br>
+     * Signalisiert das Aufgeben eines Clients.<br>
+     * <br>
+     * 6. PING:<br>
+     * Nachricht, die jeder angemeldete Client regelmäßig senden
+     * muss, um nicht automatisch abgemeldet zu werden.
+     */
     @OnMessage
     public void onMessage(Session session, String message) {
         //System.out.println("onMessage...");
@@ -93,7 +135,7 @@ public class VierGewinntWebSocket {
 
 
     /**
-     * Zuordung von Websocket zu Username beim betreten der Lobby
+     * Zuordung von Websocket zu Username beim betreten der Lobby.
      * @param username Username des Clients
      * @param sessionID SessionID des Websockets
      */
@@ -104,7 +146,7 @@ public class VierGewinntWebSocket {
 
 
     /**
-     * Zuordung von Websocket zu Username bei einem neuen Game
+     * Zuordung von Websocket zu Username bei einem neuen Game.
      * @param username Username des Clients
      * @param sessionID SessionID des Websockets
      * @param gameID ID des Games um andere Mitspieler zu ermitteln
