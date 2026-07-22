@@ -774,17 +774,11 @@ public final class ServerData {
             Account bot2 = new Account("Bot2", "8588310a98676af6e22563c1559e1ae20f85950792bdcd0c8f334867c54581cd");
             Account bot3 = new Account("Bot3", "825d56f6767ea9562139e08caf3e82e66e568b64c5408a501c0855bb928dc7ae");
 
-            Map<String, Account> botAccounts = new HashMap<>();
-            botAccounts.put("Bot1", bot1);
-            botAccounts.put("Bot2", bot2);
-            botAccounts.put("Bot3", bot3);
+            accounts.put("Bot1", bot1);
+            accounts.put("Bot2", bot2);
+            accounts.put("Bot3", bot3);
 
-            try {
-                objectMapper.writerWithDefaultPrettyPrinter().writeValue((accountFile), botAccounts);
-                System.out.println("Bot Accounts gespeichert");
-            } catch (IOException e) {
-                System.out.println("Fehler beim Speichern der Botaccounts:");
-            }
+            saveData();
         }
     }
 
